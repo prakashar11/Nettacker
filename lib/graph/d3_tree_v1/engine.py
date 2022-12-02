@@ -4,6 +4,16 @@
 import json
 import os
 from core.alert import messages
+import logging
+
+logger = logging.getLogger("__name__")
+# logger.setLevel(logging.INFO)
+
+# for console output; don't use print
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+consoleHandler = logging.StreamHandler()
+logger.addHandler(consoleHandler)
 
 
 def start(events):
@@ -23,6 +33,8 @@ def start(events):
         "children": {}
     }
     # get data for normalised_json
+    # logger.debug(f"d3_engine: event {events}")
+
     for event in events:
         if event['target'] not in normalisedjson['children']:
             normalisedjson['children'].update(
@@ -46,16 +58,29 @@ def start(events):
             f"target: {event['target']}, module_name: {event['module_name']}, port: "
             f"{event['port']}, event: {event['event']}"
         )
+
     # define a d3_structure_json
     d3_structure = {
-        "name": "Starting attack",
+        "name": "assets",
         "children": []
     }
     # get data for normalised_json
+    # logger.debug(f"d3_graph: normalized json: {normalisedjson}")
     for target in list(normalisedjson['children'].keys()):
+        children_array = []
         for module_name in list(normalisedjson['children'][target].keys()):
             for description in normalisedjson["children"][target][module_name]:
-                children_array = [
+                #children_array = [
+                #    {
+                #        "name": module_name,
+                #        "children": [
+                #            {
+                #                "name": description
+                #            }
+                #        ]
+                #    }
+                #]
+                children_array.append(
                     {
                         "name": module_name,
                         "children": [
@@ -64,14 +89,20 @@ def start(events):
                             }
                         ]
                     }
-                ]
-                d3_structure["children"].append(
-                    {
-                        "name": target,
-                        "children": children_array
-                    }
                 )
-
+                #d3_structure["children"].append(
+                #    {
+                #       "name": target,
+                #       "children": children_array
+                #   }
+                #)
+        d3_structure["children"].append(
+            {
+                "name": target,
+                "children": children_array
+             }
+        )
+    logger.debug(f"d3_structure: {d3_structure}")
     from config import nettacker_paths
     data = open(
         os.path.join(
